@@ -9,4 +9,5 @@ struct DataTableColours {
     let alternatingColours: Bool
     let headerBottomBorder: UIColor
     let regularBottomBorder: UIColor
+    let highlightColour: UIColor
 }

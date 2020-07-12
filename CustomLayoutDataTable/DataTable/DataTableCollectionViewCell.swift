@@ -12,5 +12,4 @@ class DataTableCollectionViewCell: UICollectionViewCell {
         super.awakeFromNib()
         // Initialization code
     }
-
 }

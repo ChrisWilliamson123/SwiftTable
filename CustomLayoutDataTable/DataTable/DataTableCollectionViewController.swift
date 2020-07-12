@@ -41,12 +41,18 @@ class DataTableCollectionViewController: UICollectionViewController {
         (.regular, ["Total", "57", "24", "17", "16", "90", "70", "42.1%"]),
     ]
 
+    let leftAlignedColumns = [0]
+    let rightAlignedColumns: [Int] = []
+
     var numberOfHeaderRows: Int {
         data.filter({ $0.type == .header }).count
     }
     var maxNumberOfColumns: Int {
         data.compactMap({ $0.columns.count }).max() ?? 0
     }
+
+    var selectedRow: Int?
+    var selectedColumn: Int?
 
     lazy var dataTableColours: DataTableColours = {
         DataTableColours(headerBackground: .headerBackground,
@@ -56,7 +62,8 @@ class DataTableCollectionViewController: UICollectionViewController {
                          regularText: .black,
                          alternatingColours: true,
                          headerBottomBorder: .headerCellBottomBorder,
-                         regularBottomBorder: .regularBottomBorder)
+                         regularBottomBorder: .regularBottomBorder,
+                         highlightColour: .lightGray)
     }()
 
     lazy var layout: DataTableCollectionViewLayout = {
@@ -107,6 +114,14 @@ extension DataTableCollectionViewController {
         cell.textLabelBottomConstraint.constant = layout.settings.cellPadding.bottom
         cell.textLabelLeadingConstraint.constant = layout.settings.cellPadding.left
 
+        if leftAlignedColumns.contains(indexPath.row) && indexPath.section >= numberOfHeaderRows {
+            cell.textLabel.textAlignment = .left
+        } else if rightAlignedColumns.contains(indexPath.row) && indexPath.section >= numberOfHeaderRows {
+            cell.textLabel.textAlignment = .right
+        } else {
+            cell.textLabel.textAlignment = .center
+        }
+
         let isHeaderRow = indexPath.section < numberOfHeaderRows
         if isHeaderRow {
             cell.backgroundColor = dataTableColours.headerBackground
@@ -116,8 +131,16 @@ extension DataTableCollectionViewController {
         } else {
             cell.backgroundColor = dataTableColours.primaryBackground
         }
-        
+
         cell.bottomBorderView.backgroundColor = isHeaderRow ? dataTableColours.headerBottomBorder : dataTableColours.regularBottomBorder
+
+        cell.selectedBackgroundView = {
+            let bgview = UIView(frame: CGRect(x: 0, y: 0, width: cell.frame.size.width, height: cell.frame.size.height))
+            bgview.backgroundColor = dataTableColours.highlightColour
+            return bgview
+        }()
+
+        cell.isSelected = indexPath.row == selectedColumn || indexPath.section == selectedRow
 
         return cell
     }
@@ -134,6 +157,30 @@ extension DataTableCollectionViewController {
     }
     private func isLastSection(_ section: Int) -> Bool {
         section == collectionView.numberOfSections - 1
+    }
+}
+
+// MARK: UICollectionViewDelegate
+extension DataTableCollectionViewController {
+    override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if selectedRow == indexPath.section && selectedColumn == indexPath.row {
+            selectedRow = nil
+            selectedColumn = nil
+            for cell in collectionView.visibleCells { cell.isSelected = false }
+            collectionView.deselectItem(at: indexPath, animated: false)
+            return
+        }
+        selectedRow = indexPath.section
+        selectedColumn = indexPath.row
+        for cell in collectionView.visibleCells { cell.isSelected = false }
+        for i in numberOfHeaderRows..<data.count {
+            let cell = collectionView.cellForItem(at: IndexPath(row: indexPath.row, section: i))
+            cell?.isSelected = true
+        }
+        for i in 0..<maxNumberOfColumns {
+            let cell = collectionView.cellForItem(at: IndexPath(row: i, section: indexPath.section))
+            cell?.isSelected = true
+        }
     }
 }
 
