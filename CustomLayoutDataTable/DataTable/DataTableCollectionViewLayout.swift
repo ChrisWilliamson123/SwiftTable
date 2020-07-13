@@ -97,30 +97,36 @@ extension DataTableCollectionViewLayout {
 
         itemAttributes = []
 
-        for section in 0..<collectionView.numberOfSections {
+        for rowIndex in 0..<collectionView.numberOfSections {
             var sectionAttributes: [UICollectionViewLayoutAttributes] = []
 
-            for index in 0..<settings.maxNumberOfColumns {
-                let itemSize = CGSize(width: columnWidths[index], height: rowHeights[section])
-                let indexPath = IndexPath(item: index, section: section)
+            let numberOfColumns = collectionView.numberOfItems(inSection: rowIndex)
+            let isFullWidth = numberOfColumns == 1
+            for columnIndex in 0..<numberOfColumns {
+                let itemSize = CGSize(width: columnWidths[columnIndex], height: rowHeights[rowIndex])
+                let indexPath = IndexPath(item: columnIndex, section: rowIndex)
                 let attributes = UICollectionViewLayoutAttributes(forCellWith: indexPath)
-                attributes.frame = CGRect(x: xOffset, y: yOffset, width: itemSize.width, height: itemSize.height).integral
 
-                if section < settings.numberOfStickyRows && index < settings.numberOfStickyColumns {
+                let width: CGFloat
+                if isFullWidth { width = collectionView.frame.width }
+                else { width = itemSize.width }
+                attributes.frame = CGRect(x: xOffset, y: yOffset, width: width, height: itemSize.height).integral
+
+                if rowIndex < settings.numberOfStickyRows && columnIndex < settings.numberOfStickyColumns {
                     // First cell should be on top
                     attributes.zIndex = 1024
-                } else if section < settings.numberOfStickyRows || index < settings.numberOfStickyColumns {
+                } else if rowIndex < settings.numberOfStickyRows || columnIndex < settings.numberOfStickyColumns {
                     // First row/column should be above other cells
                     attributes.zIndex = 1023
                 }
 
-                if section < settings.numberOfStickyRows {
-                    let heightOfPreviousRows: CGFloat = Array(0..<section).reduce(0) { $0 + rowHeights[$1] }
+                if rowIndex < settings.numberOfStickyRows {
+                    let heightOfPreviousRows: CGFloat = Array(0..<rowIndex).reduce(0) { $0 + rowHeights[$1] }
                     attributes.frame.origin.y = collectionView.contentOffset.y + heightOfPreviousRows
                 }
 
-                if index < settings.numberOfStickyColumns {
-                    let WidthOfPreviousColumns: CGFloat = Array(0..<index).reduce(0) { $0 + columnWidths[$1] }
+                if columnIndex < settings.numberOfStickyColumns {
+                    let WidthOfPreviousColumns: CGFloat = Array(0..<columnIndex).reduce(0) { $0 + columnWidths[$1] }
                     attributes.frame.origin.x = collectionView.contentOffset.x + WidthOfPreviousColumns
                 }
 
@@ -129,7 +135,7 @@ extension DataTableCollectionViewLayout {
                 xOffset += itemSize.width
                 column += 1
 
-                if column == settings.maxNumberOfColumns {
+                if column == numberOfColumns {
                     if xOffset > contentWidth {
                         contentWidth = xOffset
                     }
@@ -155,7 +161,16 @@ extension DataTableCollectionViewLayout {
         for rowIndex in 0..<collectionView.numberOfSections {
             var maxHeight: CGFloat = 0
 
-            for columnIndex in 0..<settings.maxNumberOfColumns {
+            let numberOfColumns = collectionView.numberOfItems(inSection: rowIndex)
+            let isFullWidth = numberOfColumns == 1
+
+            if isFullWidth,
+                let text = dataProvider?.textForCell(at: IndexPath(item: 0, section: rowIndex)),
+                let size = text.sizeOfString(constrainedToWidth: Double(collectionView.frame.width)) {
+                rowHeights.append(size.height + settings.cellPadding.top + settings.cellPadding.bottom)
+                continue
+            }
+            for columnIndex in 0..<collectionView.numberOfItems(inSection: rowIndex) {
                 guard let text = dataProvider?.textForCell(at: IndexPath(row: columnIndex, section: rowIndex)),
                     let size = text.sizeOfString(constrainedToWidth: Double(settings.maxCellWidth)) else { continue }
 
