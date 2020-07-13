@@ -48,7 +48,7 @@ class DataTableCollectionViewController: UICollectionViewController {
         data.filter({ $0.type == .header }).count
     }
     var maxNumberOfColumns: Int {
-        data.compactMap({ $0.columns.count }).max() ?? 0
+        data.map({ $0.columns.count }).max() ?? 0
     }
 
     var selectedRow: Int?
@@ -187,22 +187,21 @@ extension DataTableCollectionViewController {
 // MARK: TableDataProviding
 extension DataTableCollectionViewController: TableDataProviding {
     func textForCell(at indexPath: IndexPath) -> NSAttributedString? {
-        if indexPath.section < data.count && indexPath.row < data[indexPath.section].columns.count {
-            let cellType = data[indexPath.section].type
-            let textString = data[indexPath.section].columns[indexPath.row]
-            if cellType == .header {
-                return NSAttributedString(string: textString, attributes: [
-                    NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 14.0),
-                    NSAttributedString.Key.foregroundColor: dataTableColours.headerText
-                ])
-            } else {
-                return NSAttributedString(string: textString, attributes: [
-                    NSAttributedString.Key.font: UIFont.systemFont(ofSize: 14.0),
-                    NSAttributedString.Key.foregroundColor: dataTableColours.regularText
-                ])
-            }
+        guard indexPath.section < data.count && indexPath.row < data[indexPath.section].columns.count else { return nil }
+        let cellType = data[indexPath.section].type
+        let textString = data[indexPath.section].columns[indexPath.row]
+        let foregroundColor: UIColor
+        let font: UIFont
+        if cellType == .header {
+            foregroundColor = dataTableColours.headerText
+            font = UIFont.boldSystemFont(ofSize: 14.0)
         } else {
-            return nil
+            foregroundColor = dataTableColours.regularText
+            font = UIFont.systemFont(ofSize: 14.0)
         }
+        return NSAttributedString(string: textString, attributes: [
+            NSAttributedString.Key.font: font,
+            NSAttributedString.Key.foregroundColor: foregroundColor
+        ])
     }
 }
